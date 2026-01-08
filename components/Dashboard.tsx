@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { AccountStats, Position, Trade, OrderSide } from '../types';
-import TradingTerminal from './TradingTerminal';
-import OrderBook from './OrderBook';
-import RiskMetrics from './RiskMetrics';
+import { AccountStats, Position, Trade, OrderSide } from '../types.ts';
+import TradingTerminal from './TradingTerminal.tsx';
+import OrderBook from './OrderBook.tsx';
+import RiskMetrics from './RiskMetrics.tsx';
 
 interface DashboardProps {
   stats: AccountStats;

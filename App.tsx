@@ -1,14 +1,15 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import Dashboard from './components/Dashboard';
-import LandingPage from './components/LandingPage';
-import AccountStatus from './components/AccountStatus';
-import Navbar from './components/Navbar';
-import BlogPage from './components/BlogPage';
-import ContactPage from './components/ContactPage';
-import CheckoutPage from './components/CheckoutPage';
-import { AccountTier, AccountStats, Position, Trade, OrderSide } from './types';
-import { INITIAL_CAPITAL, DAILY_LOSS_LIMIT_PERCENT, MAX_DRAWDOWN_PERCENT } from './constants';
+import React, { useState, useEffect } from 'react';
+import Dashboard from './components/Dashboard.tsx';
+import LandingPage from './components/LandingPage.tsx';
+import AccountStatus from './components/AccountStatus.tsx';
+import Navbar from './components/Navbar.tsx';
+import BlogPage from './components/BlogPage.tsx';
+import ContactPage from './components/ContactPage.tsx';
+import CheckoutPage from './components/CheckoutPage.tsx';
+import ChatBot from './components/ChatBot.tsx';
+import { AccountTier, AccountStats, Position, Trade, OrderSide } from './types.ts';
+import { INITIAL_CAPITAL, DAILY_LOSS_LIMIT_PERCENT, MAX_DRAWDOWN_PERCENT } from './constants.tsx';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'status' | 'blog' | 'contact' | 'checkout'>('landing');
@@ -77,7 +78,6 @@ const App: React.FC = () => {
   }, [positions, stats.balance, stats.dailyLossLimit, selectedAccountSize]);
 
   const handleInitiateStart = (tier: AccountTier, mode: string, size: number) => {
-    // We set pendingTier instead of userTier so the Navbar stays restricted
     setPendingTier(tier);
     setStepMode(mode);
     setSelectedAccountSize(size);
@@ -85,7 +85,6 @@ const App: React.FC = () => {
   };
 
   const handleCompletePurchase = () => {
-    // Now that purchase is done, we activate the userTier
     setUserTier(pendingTier);
     setStats({
       balance: selectedAccountSize,
@@ -166,6 +165,8 @@ const App: React.FC = () => {
         {currentPage === 'contact' && <ContactPage />}
       </main>
       
+      <ChatBot />
+
       {stats.isLocked && (
         <div className="fixed bottom-0 left-0 right-0 bg-rose-600 text-white py-4 px-6 text-center font-black animate-pulse z-50 shadow-[0_-10px_40px_rgba(225,29,72,0.6)] uppercase tracking-widest text-sm backdrop-blur-md">
           ⚠️ ACCOUNT TERMINATED: {stats.failReason}.

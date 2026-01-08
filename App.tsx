@@ -4,13 +4,18 @@ import Dashboard from './components/Dashboard';
 import LandingPage from './components/LandingPage';
 import AccountStatus from './components/AccountStatus';
 import Navbar from './components/Navbar';
+import BlogPage from './components/BlogPage';
+import ContactPage from './components/ContactPage';
+import CheckoutPage from './components/CheckoutPage';
 import { AccountTier, AccountStats, Position, Trade, OrderSide } from './types';
 import { INITIAL_CAPITAL, DAILY_LOSS_LIMIT_PERCENT, MAX_DRAWDOWN_PERCENT } from './constants';
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'status'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'status' | 'blog' | 'contact' | 'checkout'>('landing');
   const [userTier, setUserTier] = useState<AccountTier | null>(null);
+  const [pendingTier, setPendingTier] = useState<AccountTier | null>(null);
   const [stepMode, setStepMode] = useState<string>('2 step');
+  const [selectedAccountSize, setSelectedAccountSize] = useState<number>(50000);
   
   // Simulation State
   const [stats, setStats] = useState<AccountStats>({
@@ -57,9 +62,9 @@ const App: React.FC = () => {
       failReason = `Daily Loss Limit Reached (₹${stats.dailyLossLimit.toLocaleString()})`;
     }
 
-    if (newEquity <= INITIAL_CAPITAL * (1 - MAX_DRAWDOWN_PERCENT)) {
+    if (newEquity <= (selectedAccountSize || INITIAL_CAPITAL) * (1 - MAX_DRAWDOWN_PERCENT)) {
       isLocked = true;
-      failReason = `Maximum Drawdown Limit Exceeded (₹${(INITIAL_CAPITAL * MAX_DRAWDOWN_PERCENT).toLocaleString()})`;
+      failReason = `Maximum Drawdown Limit Exceeded (₹${((selectedAccountSize || INITIAL_CAPITAL) * MAX_DRAWDOWN_PERCENT).toLocaleString()})`;
     }
 
     setStats(prev => ({
@@ -69,18 +74,26 @@ const App: React.FC = () => {
       isLocked: isLocked || prev.isLocked,
       failReason: failReason || prev.failReason
     }));
-  }, [positions, stats.balance, stats.dailyLossLimit]);
+  }, [positions, stats.balance, stats.dailyLossLimit, selectedAccountSize]);
 
-  const handleStartTrading = (tier: AccountTier, mode: string) => {
-    setUserTier(tier);
+  const handleInitiateStart = (tier: AccountTier, mode: string, size: number) => {
+    // We set pendingTier instead of userTier so the Navbar stays restricted
+    setPendingTier(tier);
     setStepMode(mode);
+    setSelectedAccountSize(size);
+    setCurrentPage('checkout');
+  };
+
+  const handleCompletePurchase = () => {
+    // Now that purchase is done, we activate the userTier
+    setUserTier(pendingTier);
     setStats({
-      balance: INITIAL_CAPITAL,
-      buyingPower: INITIAL_CAPITAL,
-      equity: INITIAL_CAPITAL,
+      balance: selectedAccountSize,
+      buyingPower: selectedAccountSize,
+      equity: selectedAccountSize,
       dailyPnl: 0,
-      maxDrawdown: INITIAL_CAPITAL * MAX_DRAWDOWN_PERCENT,
-      dailyLossLimit: INITIAL_CAPITAL * DAILY_LOSS_LIMIT_PERCENT,
+      maxDrawdown: selectedAccountSize * MAX_DRAWDOWN_PERCENT,
+      dailyLossLimit: selectedAccountSize * DAILY_LOSS_LIMIT_PERCENT,
       isLocked: false,
     });
     setPositions([]);
@@ -128,15 +141,20 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#02031a] text-slate-50 flex flex-col">
-      {currentPage !== 'landing' && (
-        <Navbar 
-          currentPage={currentPage} 
-          setCurrentPage={setCurrentPage} 
-          tier={userTier}
-        />
-      )}
+      <Navbar 
+        currentPage={currentPage} 
+        setCurrentPage={setCurrentPage} 
+        tier={userTier}
+      />
       <main className="flex-1">
-        {currentPage === 'landing' && <LandingPage onStart={handleStartTrading} />}
+        {currentPage === 'landing' && <LandingPage onStart={handleInitiateStart} />}
+        {currentPage === 'checkout' && (
+          <CheckoutPage 
+            accountSize={selectedAccountSize} 
+            stepMode={stepMode} 
+            onPurchase={handleCompletePurchase} 
+          />
+        )}
         {currentPage === 'dashboard' && (
           <Dashboard 
             stats={stats} positions={positions} trades={trades} marketPrice={marketPrice}
@@ -144,7 +162,10 @@ const App: React.FC = () => {
           />
         )}
         {currentPage === 'status' && <AccountStatus stats={stats} tier={userTier} stepMode={stepMode} />}
+        {currentPage === 'blog' && <BlogPage />}
+        {currentPage === 'contact' && <ContactPage />}
       </main>
+      
       {stats.isLocked && (
         <div className="fixed bottom-0 left-0 right-0 bg-rose-600 text-white py-4 px-6 text-center font-black animate-pulse z-50 shadow-[0_-10px_40px_rgba(225,29,72,0.6)] uppercase tracking-widest text-sm backdrop-blur-md">
           ⚠️ ACCOUNT TERMINATED: {stats.failReason}.
